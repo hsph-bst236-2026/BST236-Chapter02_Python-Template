@@ -48,7 +48,7 @@ sync:
 	elif [ "$(strip $(VENV_METHOD))" = "conda" ]; then \
 		$(VENV_PIP) install --upgrade -r requirements.txt; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv pip sync requirements.txt; \
+		uv sync; \
 	else \
 		echo "Unknown VENV_METHOD: '$(VENV_METHOD)'"; \
 	fi
@@ -65,12 +65,12 @@ push:
 		$(CONDA_ACTIVATE) && \
 		conda env export > environment.yml; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv pip freeze > requirements.txt; \
+		uv lock; \
 	else \
 		echo "Unknown VENV_METHOD: '$(VENV_METHOD)'"; \
 	fi
-	echo "Lockfile created using $(VENV_METHOD)!"
-	echo "Pushing to GitHub..."
+	@echo "Lockfile created using $(VENV_METHOD)!"
+	@echo "Pushing to GitHub..."
 	git add .
 	git commit --amend --no-edit
 	@if [ "$(strip $(BRANCH))" = "main" ]; then \
@@ -98,7 +98,7 @@ venv:
 		$(CONDA_ACTIVATE) && \
 		conda create --prefix $(VENV_NAME) python=$(PYTHON_VERSION) -y; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv venv $(VENV_NAME); \
+		uv init --python $(PYTHON_VERSION); \
 	elif [ "$(strip $(VENV_METHOD))" = "mamba" ]; then \
 		mamba create -n $(VENV_NAME) python=$(PYTHON_VERSION) pandas numpy matplotlib scikit-learn -y; \
 		mamba activate $(VENV_NAME); \
@@ -120,8 +120,7 @@ install:
 		$(CONDA_ACTIVATE) && \
 		conda install --prefix $(VENV_NAME) numpy pandas scikit-learn matplotlib seaborn jupyter -y; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		source $(VENV_NAME)/bin/activate; \
-		uv pip install numpy pandas scikit-learn matplotlib seaborn jupyter; \
+		uv add numpy pandas scikit-learn matplotlib seaborn jupyter; \
 	fi
 	@echo "Packages installed using $(VENV_METHOD)!"
 
@@ -135,7 +134,7 @@ update_packages:
 	elif [ "$(strip $(VENV_METHOD))" = "conda" ]; then \
 		$(VENV_PIP) install --upgrade -r requirements.txt; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv pip sync requirements.txt; \
+		uv sync; \
 	fi
 	@echo "Packages updated using $(VENV_METHOD)!"
 
@@ -150,7 +149,7 @@ lock:
 		$(CONDA_ACTIVATE) && \
 		conda env export > environment.yml; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv pip freeze > requirements.txt; \
+		uv lock; \
 	else \
 		echo "Unknown VENV_METHOD: '$(VENV_METHOD)'"; \
 	fi
@@ -167,7 +166,7 @@ activate:
 	elif [ "$(strip $(VENV_METHOD))" = "conda" ]; then \
 		echo "conda activate $(shell pwd)/$(VENV_NAME)"; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		echo "source $(VENV_NAME)/bin/activate"; \
+		echo "source .venv/bin/activate  OR  run scripts with: uv run <script.py>"; \
 	fi
 
 # Show deactivation command
@@ -195,7 +194,7 @@ list:
 	elif [ "$(strip $(VENV_METHOD))" = "conda" ]; then \
 		$(CONDA_ACTIVATE) && conda list --prefix $(VENV_NAME); \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
-		uv pip list; \
+		uv tree; \
 	else \
 		echo "Unknown VENV_METHOD: '$(VENV_METHOD)'"; \
 	fi
@@ -219,8 +218,8 @@ clean:
 		rm -rf requirements.txt; \
 	elif [ "$(strip $(VENV_METHOD))" = "uv" ]; then \
 		echo "Removing uv environment..."; \
-		rm -rf $(VENV_NAME); \
-		rm -rf requirements.txt; \
+		rm -rf .venv; \
+		rm -rf pyproject.toml uv.lock; \
 	else \
 		echo "Unknown VENV_METHOD: '$(VENV_METHOD)'"; \
 	fi
